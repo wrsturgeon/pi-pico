@@ -11,11 +11,6 @@
       };
     };
     flake-utils.url = "github:numtide/flake-utils";
-    naersk = {
-      url = "github:nmattia/naersk";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    nix-filter.url = "github:numtide/nix-filter";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   };
 
@@ -23,8 +18,6 @@
     {
       fenix,
       flake-utils,
-      naersk,
-      nix-filter,
       nixpkgs,
       self,
     }:
@@ -53,6 +46,7 @@
                 escaped-filename = "${pkgs.lib.strings.escapeShellArg "./${filename}"}";
               in
               ''
+                rm -fr ${escaped-filename}
                 mkdir -p ${escaped-filename}
                 rm -fr ${escaped-filename}
                 echo ${pkgs.lib.strings.escapeShellArg contents} > ${escaped-filename}
@@ -71,6 +65,17 @@
 
       in
       {
+
+        apps = builtins.mapAttrs (
+          name: script-body:
+          let
+            script = with-shebang script-body;
+          in
+          {
+            type = "app";
+            program = "${pkgs.writeScriptBin name script}/bin/${name}";
+          }
+        ) { mise-en-place = write-files; };
 
         devShells.default = self.lib.${system}.shell;
 
@@ -104,46 +109,6 @@
             );
 
         };
-
-        /*
-          packages = {
-
-            default =
-              (naersk.lib.${system}.override {
-                cargo = self.lib.${system}.toolchain;
-                rustc = self.lib.${system}.toolchain;
-              }).buildPackage
-                (
-                  {
-                    inherit name version;
-                    inherit (self.packages.${system}) src;
-                  }
-                  // env
-                );
-
-            src = pkgs.stdenvNoCC.mkDerivation (
-              {
-                pname = "${name}-src";
-                inherit version;
-
-                src = nix-filter {
-                  root = ./.;
-                  include = [ ./src ];
-                };
-
-                buildPhase = ":";
-                installPhase = ''
-                  mkdir -p $out
-                  ls -A | xargs -I{} mv {} $out/
-                  cd $out
-                  ${write-files}
-                '';
-              }
-              // env
-            );
-
-          };
-        */
 
       }
     );
