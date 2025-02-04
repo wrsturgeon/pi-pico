@@ -1,0 +1,10 @@
+**/.DS_Store
+**/.cargo
+**/.direnv
+**/build.rs
+**/Cargo.toml
+**/Cargo.lock
+**/memory.x
+**/result
+**/rust-toolchain.toml
+**/target
