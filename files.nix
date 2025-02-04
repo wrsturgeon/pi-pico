@@ -14,7 +14,6 @@
       "-C", "link-arg=-Tlink-rp.x",
       "-C", "link-arg=-Tdefmt.x",
 
-      "-C", "inline-threshold=5",
       "-C", "no-vectorize-loops",
       "-Z", "trap-unreachable=no",
     ]
