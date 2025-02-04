@@ -44,18 +44,6 @@
           CARGO_BUILD_TARGET = "thumbv6m-none-eabi";
         };
 
-        toolchain =
-          with fenix.packages.${system};
-          combine (
-            (with minimal; [
-              cargo
-              rustc
-            ])
-            ++ (with targets.${env.CARGO_BUILD_TARGET}.latest; [
-              rust-std
-            ])
-          );
-
         files = import ./files.nix { inherit name version; };
         write-files = pkgs.lib.strings.concatLines (
           builtins.attrValues (
@@ -84,58 +72,78 @@
       in
       {
 
-        devShells.default = pkgs.mkShell (
-          {
-            packagesFrom = builtins.attrValues self.packages.${system};
-            packages =
-              [ toolchain ]
-              ++ (with pkgs; [
-                elf2uf2-rs
-                flip-link
-                probe-rs
-                rust-analyzer
-              ]);
-          }
-          // env
-        );
+        devShells.default = self.lib.${system}.shell;
 
-        packages = {
+        lib = {
 
-          default =
-            (naersk.lib.${system}.override {
-              cargo = toolchain;
-              rustc = toolchain;
-            }).buildPackage
-              (
-                {
-                  inherit name version;
-                  inherit (self.packages.${system}) src;
-                }
-                // env
-              );
-
-          src = pkgs.stdenvNoCC.mkDerivation (
+          shell = pkgs.mkShell (
             {
-              pname = "${name}-src";
-              inherit version;
-
-              src = nix-filter {
-                root = ./.;
-                include = [ ./src ];
-              };
-
-              buildPhase = ":";
-              installPhase = ''
-                mkdir -p $out
-                ls -A | xargs -I{} mv {} $out/
-                cd $out
-                ${write-files}
-              '';
+              # packagesFrom = builtins.attrValues self.packages.${system};
+              packages =
+                [ self.lib.${system}.toolchain ]
+                ++ (with pkgs; [
+                  elf2uf2-rs
+                  flip-link
+                  probe-rs
+                  rust-analyzer
+                ]);
             }
             // env
           );
 
+          toolchain =
+            with fenix.packages.${system};
+            combine (
+              (with minimal; [
+                cargo
+                rustc
+              ])
+              ++ (with targets.${env.CARGO_BUILD_TARGET}.latest; [
+                rust-std
+              ])
+            );
+
         };
+
+        /*
+          packages = {
+
+            default =
+              (naersk.lib.${system}.override {
+                cargo = self.lib.${system}.toolchain;
+                rustc = self.lib.${system}.toolchain;
+              }).buildPackage
+                (
+                  {
+                    inherit name version;
+                    inherit (self.packages.${system}) src;
+                  }
+                  // env
+                );
+
+            src = pkgs.stdenvNoCC.mkDerivation (
+              {
+                pname = "${name}-src";
+                inherit version;
+
+                src = nix-filter {
+                  root = ./.;
+                  include = [ ./src ];
+                };
+
+                buildPhase = ":";
+                installPhase = ''
+                  mkdir -p $out
+                  ls -A | xargs -I{} mv {} $out/
+                  cd $out
+                  ${write-files}
+                '';
+              }
+              // env
+            );
+
+          };
+        */
 
       }
     );
